@@ -1,4 +1,4 @@
-# 🫁 Respire App
+# 🫁 Respiro App
 
 Um aplicativo de meditação e exercícios respiratórios desenvolvido em React Native com Expo, focado na técnica 4-7-8 para alívio rápido da ansiedade e relaxamento.
 
