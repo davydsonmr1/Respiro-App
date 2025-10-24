@@ -19,37 +19,37 @@ import { StatusBar } from 'expo-status-bar';
 const { width, height } = Dimensions.get('window');
 
 export default function TelaPrincipal() {
-  // Estados principais da aplicação
+
   const [jaViuOnboarding, setJaViuOnboarding] = useState(false);
   const [estaEmSessao, setEstaEmSessao] = useState(false);
   const [modalConfiguracoes, setModalConfiguracoes] = useState(false);
   const [modalSobre, setModalSobre] = useState(false);
   
-  // Estados da sessão de respiração
+  
   const [cicloAtual, setCicloAtual] = useState(0);
-  const [faseAtual, setFaseAtual] = useState(''); // 'inspire', 'segure', 'expire'
+  const [faseAtual, setFaseAtual] = useState(''); 
   const [textoInstrucao, setTextoInstrucao] = useState('Toque para começar');
   const [sessaoConcluida, setSessaoConcluida] = useState(false);
   
-  // Configurações do usuário (salvos no AsyncStorage)
-  const [duracaoSessao, setDuracaoSessao] = useState(4); // 4 ciclos padrão
-  const [guiaSom, setGuiaSom] = useState(false); // Padrão: desligado
-  const [guiaVibracao, setGuiaVibracao] = useState(true); // Padrão: ligado
-  const [guiaTexto, setGuiaTexto] = useState(true); // Padrão: ligado
   
-  // Referências para animação e controle de tempo
+  const [duracaoSessao, setDuracaoSessao] = useState(4); 
+  const [guiaSom, setGuiaSom] = useState(false); 
+  const [guiaVibracao, setGuiaVibracao] = useState(true); 
+  const [guiaTexto, setGuiaTexto] = useState(true); 
+  
+  
   const animacaoEscala = useRef(new Animated.Value(0.8)).current;
   const timeoutRef = useRef(null);
   const soundInspire = useRef(null);
   const soundExpire = useRef(null);
 
-  // Hook para carregar configurações salvas e verificar onboarding
+  
   useEffect(() => {
     carregarConfiguracoes();
     verificarOnboarding();
     carregarSons();
     
-    // Cleanup quando o componente for desmontado
+    
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -57,7 +57,7 @@ export default function TelaPrincipal() {
     };
   }, []);
 
-  // Função para verificar se o usuário já viu o onboarding
+  
   const verificarOnboarding = async () => {
     try {
       const valor = await AsyncStorage.getItem('jaViuOnboarding');
@@ -68,7 +68,7 @@ export default function TelaPrincipal() {
     }
   };
 
-  // Função para marcar o onboarding como concluído
+  
   const concluirOnboarding = async () => {
     try {
       await AsyncStorage.setItem('jaViuOnboarding', 'true');
@@ -78,7 +78,7 @@ export default function TelaPrincipal() {
     }
   };
 
-  // Função para carregar todas as configurações do AsyncStorage
+  
   const carregarConfiguracoes = async () => {
     try {
       const configuracoes = await AsyncStorage.multiGet([
@@ -88,7 +88,7 @@ export default function TelaPrincipal() {
         'guiaTexto'
       ]);
       
-      // Processa cada configuração carregada
+      
       configuracoes.forEach(([chave, valor]) => {
         if (valor !== null) {
           switch (chave) {
@@ -112,100 +112,102 @@ export default function TelaPrincipal() {
     }
   };
 
-  // Função para carregar os arquivos de áudio
+  
   const carregarSons = async () => {
     try {
-      // Carrega o som de inspiração
+      console.log('Carregando arquivos de áudio...');
+      
+      
       const { sound: inspireSound } = await Audio.Sound.createAsync(
         require('../../assets/sons/inspirar.mp3'),
         { shouldPlay: false }
       );
       soundInspire.current = inspireSound;
+      console.log('Som de inspiração carregado com sucesso');
       
-      // Carrega o som de expiração
+      
       const { sound: expireSound } = await Audio.Sound.createAsync(
         require('../../assets/sons/expirar.mp3'),
         { shouldPlay: false }
       );
       soundExpire.current = expireSound;
+      console.log('Som de expiração carregado com sucesso');
+      
     } catch (erro) {
-      console.log('Erro ao carregar sons (certifique-se de ter os arquivos inspirar.mp3 e expirar.mp3):', erro);
+      console.log('Erro ao carregar sons:', erro);
+      
     }
   };
 
-  // Função principal para iniciar uma sessão de respiração
+  
   const iniciarSessao = () => {
     setEstaEmSessao(true);
     setCicloAtual(0);
     setSessaoConcluida(false);
     
-    // Inicia o primeiro ciclo
+    
     executarCiclo(0);
   };
 
-  // Função que executa um ciclo completo de respiração (19 segundos)
+  
   const executarCiclo = (numeroCiclo) => {
     console.log(`Iniciando ciclo ${numeroCiclo + 1} de ${duracaoSessao}`);
     
-    // Fase 1: INSPIRE (4 segundos)
+    
     setFaseAtual('inspire');
     if (guiaTexto) setTextoInstrucao('Inspire...');
     
-    // Animação: círculo cresce por 4 segundos
+    
     Animated.timing(animacaoEscala, {
       toValue: 1.2,
       duration: 4000,
       useNativeDriver: true,
     }).start();
     
-    // Som de inspiração
+    
     if (guiaSom && soundInspire.current) {
       soundInspire.current.replayAsync();
     }
     
-    // Vibração contínua pesada durante inspiração
+    
     if (guiaVibracao) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     }
     
-    // Após 4 segundos, passa para fase de segurar
     timeoutRef.current = setTimeout(() => {
       faseSegure(numeroCiclo);
     }, 4000);
   };
 
-  // Fase 2: SEGURE a respiração (7 segundos)
+  
   const faseSegure = (numeroCiclo) => {
     setFaseAtual('segure');
     if (guiaTexto) setTextoInstrucao('Segure...');
     
-    // Círculo fica parado no tamanho máximo
-    // Sem vibração ou som durante esta fase
     
-    // Após 7 segundos, passa para fase de expirar
     timeoutRef.current = setTimeout(() => {
       faseExpire(numeroCiclo);
     }, 7000);
   };
 
-  // Fase 3: EXPIRE (8 segundos)
+  
   const faseExpire = (numeroCiclo) => {
     setFaseAtual('expire');
     if (guiaTexto) setTextoInstrucao('Expire...');
     
-    // Animação: círculo diminui por 8 segundos
+    
     Animated.timing(animacaoEscala, {
       toValue: 0.8,
       duration: 8000,
       useNativeDriver: true,
     }).start();
     
-    // Som de expiração
+    
     if (guiaSom && soundExpire.current) {
       soundExpire.current.replayAsync();
     }
     
-    // Vibração: 8 pulsos leves (um por segundo)
+    
     if (guiaVibracao) {
       for (let i = 0; i < 8; i++) {
         setTimeout(() => {
@@ -214,22 +216,22 @@ export default function TelaPrincipal() {
       }
     }
     
-    // Após 8 segundos, verifica se deve continuar ou finalizar
+    
     timeoutRef.current = setTimeout(() => {
       const proximoCiclo = numeroCiclo + 1;
       setCicloAtual(proximoCiclo);
       
       if (proximoCiclo < duracaoSessao) {
-        // Continua para o próximo ciclo
+       
         executarCiclo(proximoCiclo);
       } else {
-        // Finaliza a sessão
+        
         finalizarSessao();
       }
     }, 8000);
   };
 
-  // Função para finalizar a sessão (automática ou manual)
+  
   const finalizarSessao = () => {
     // Para todas as animações e timeouts
     if (timeoutRef.current) {
